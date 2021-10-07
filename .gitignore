@@ -1,5 +1,6 @@
 # Ignore the local token
 token.txt
+token2.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
