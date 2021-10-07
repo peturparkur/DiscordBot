@@ -19,8 +19,6 @@ TOKEN = ""
 with open ("./token2.txt", "r") as f:
     TOKEN = f.read()
 
-#print(TOKEN)
-
 #Get NLP greetings
 GREETINGS = ["hi",
             "hello",
@@ -81,19 +79,23 @@ async def on_message(message : discord.Message):
     #    await message.channel.send("Hello!!!")
 
 @client.event
-async def on_typing(channel, user, when):
+async def on_typing(channel : discord.channel, user : discord.member, when):
     print(f"Time = {when}; User {user} is typing in channel {channel}")
 
 @client.event
-async def on_group_join(channel, user): # Doesn't actually detect voice channel join
+async def on_group_join(channel : discord.channel, user : discord.member): # Doesn't actually detect voice channel join
     print(f"User {user}, joined channel {channel}")
 
 @client.event
-async def on_voice_state_update(member, before, after):
+async def on_voice_state_update(member : discord.member, before : discord.VoiceState, after : discord.VoiceState):
     # called when someone connects/disconnects to voice channel
     # member is the user that did the change
     # before, after are the voice channel states
     print(f"voice state changed by member {member.display_name}")
+    if (before.channel is None) and (after.channel is not None):
+        print(f'{member.display_name} joined channel {after.channel.name}')
+    if (after.channel is None) and (before.channel is not None):
+        print(f'{member.display_name} left channel {before.channel.name}')
 
 @client.event
 async def on_user_update(before, after):
