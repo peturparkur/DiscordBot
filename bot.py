@@ -67,10 +67,10 @@ async def on_message(message : discord.Message):
     print("msg: ", message.content)
     content = str(message.content)
     norm_content = content.lower() #it's string
-    for x in GREETINGS:
-        if x in norm_content:
-            await chn.send(f"{x.capitalize()} {author.display_name}!")
-            break
+    #for x in GREETINGS:
+    #    if x in norm_content:
+    #        await chn.send(f"{x.capitalize()} {author.display_name}!")
+    #        break
     
     if inHated(norm_content):
         await chn.send(f"TIKTOK NOT ALLOWED {author.mention}! Go to the corner!")
