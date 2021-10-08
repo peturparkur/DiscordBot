@@ -1,5 +1,6 @@
 from discord import channel, user
 from discord.utils import get
+from discord.ext import commands
 import numpy as np
 import discord
 import datetime
@@ -55,6 +56,9 @@ def inHated(msg : str):
 @client.event
 async def on_ready():
     print(f"We have logged in as {client}")
+    # await client.change_presence(activity = discord.Activity(type = discord.ActivityType.custom, name = 'Looking for tiktok links'))
+    await client.change_presence(activity=discord.Game(name = 'TikTok link lookout'))
+    print('completed')
 
 @client.event
 async def on_message(message : discord.Message):
@@ -72,7 +76,9 @@ async def on_message(message : discord.Message):
     
     if inHated(norm_content):
         await chn.send(f"TIKTOK NOT ALLOWED {author.mention}! Go to the corner!")
-        await author.add_roles(get(author.guild.roles, name = 'Retard'))
+        await chn.send(f"{author.mention} You're a retard!", tts = True)
+        if get(author.guild.roles, name = 'Retard') is not None:
+            await author.add_roles(get(author.guild.roles, name = 'Retard'))
         await message.delete()
         
     #if message.content.startswith("hello"):
