@@ -6,6 +6,14 @@ import discord
 import datetime
 import string
 import os
+import requests
+import json # json to dict conversion
+
+#reddit image load
+from PIL import Image
+import requests
+from io import BytesIO
+
 
 # permission=8 is admin
 # invitation link: https://discord.com/api/oauth2/authorize?client_id=895705102231412776&permissions=469776384&scope=bot - No Cancer
@@ -35,6 +43,41 @@ GREETINGS = ["hi",
             "good night",
             "yolo"
 ]
+
+async def search_image(channel, author, query : string):
+    print('test')
+    image_search_url = "https://contextualwebsearch-websearch-v1.p.rapidapi.com/api/Search/ImageSearchAPI"
+    image_querystring = {"q":query,"pageNumber":"1","pageSize":"50","autoCorrect":"true"}
+    headers = {
+        'x-rapidapi-host': "contextualwebsearch-websearch-v1.p.rapidapi.com",
+        'x-rapidapi-key': "7195268bd9msheb62269ccbb1c4dp1d8749jsn9d22b0c89a23"
+    }
+    response = requests.request("GET", image_search_url, headers=headers, params=image_querystring) # send query
+    print(json.loads(response.text))
+    return response.text
+
+async def Trial_Func(channel, author, t : str):
+    print(t)
+
+async def GetRedditTop(channel : discord.channel, author, subreddit : str):
+    response = requests.request('GET', "https://www.reddit.com/r/mathmemes/.json?limit=10", headers= {'User-agent' : 'mathmeme bot 0.01'})
+    print(f'Get Subreddit r/{subreddit} top posts')
+    data = json.loads(response.text)
+    print(data)
+    print(data.keys())
+    print(data['data']['children'][1]['data'])
+    print(data['data']['children'][1]['data']['url_overridden_by_dest'])
+    content = requests.get(data['data']['children'][1]['data']['url_overridden_by_dest'], headers={'User-agent' : 'mathmeme bot 0.01'}).content
+    # image = Image.open(BytesIO(content))
+    await channel.send(file = discord.File(BytesIO(content), 'meme.png'))
+
+
+COMMAND_PREFIX = '!'
+COMMANDS = {
+    'image' : search_image,
+    'test' : Trial_Func,
+    'reddit' : GetRedditTop
+}
 
 HATED_URL = [
     'https://www.tiktok.com/',
@@ -73,6 +116,10 @@ async def on_message(message : discord.Message):
     #    if x in norm_content:
     #        await chn.send(f"{x.capitalize()} {author.display_name}!")
     #        break
+    if norm_content.startswith(COMMAND_PREFIX):
+        splitted = norm_content[1:].split()
+        await COMMANDS[splitted[0]](chn, author, *splitted[1:])
+
     
     if inHated(norm_content):
         await chn.send(f"TIKTOK NOT ALLOWED {author.mention}! Go to the corner!")
