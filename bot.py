@@ -3,16 +3,18 @@ from discord.utils import get
 from discord.ext import commands
 import numpy as np
 import discord
-import datetime
+from datetime import datetime
 import string
 import os
 import requests
 import json # json to dict conversion
+import random # for random post
 
 #reddit image load
 from PIL import Image
 import requests
 from io import BytesIO
+import asyncio #asynchronous execution
 
 
 # permission=8 is admin
@@ -27,6 +29,16 @@ TOKEN = ""
 # We read the token locally as don't want to share on github
 with open ("./token2.txt", "r") as f:
     TOKEN = f.read()
+
+async def schedule_task(interval : float, func, *args):
+    max_t = 5
+    t = 0
+    while True:
+        await func(*args)
+        t += 1
+        await asyncio.sleep(interval * 60)
+        if t >= max_t: break
+    print('schedule completed')
 
 #Get NLP greetings
 GREETINGS = ["hi",
@@ -56,27 +68,77 @@ async def search_image(channel, author, query : string):
     print(json.loads(response.text))
     return response.text
 
+def filter_today_reddit_post(posts):
+    utc_now = datetime.utcnow()
+    todays = []
+    for post in posts:
+        data = post['data']
+        #print(post.keys())
+        #print(post['data'].keys())
+        time_posted_utc = datetime.utcfromtimestamp(data['created_utc'])
+
+        delta = utc_now - time_posted_utc
+        if delta.days <= 0:
+            todays.append(post)
+    return todays
+
 async def Trial_Func(channel, author, t : str):
     print(t)
 
-async def GetRedditTop(channel : discord.channel, author, subreddit : str):
-    response = requests.request('GET', "https://www.reddit.com/r/mathmemes/.json?limit=10", headers= {'User-agent' : 'mathmeme bot 0.01'})
-    print(f'Get Subreddit r/{subreddit} top posts')
+async def GetRedditTodaysTop(channel : discord.channel, author : discord.member, subreddit : str):
+    response = requests.request('GET', f"https://www.reddit.com/r/{subreddit}/.json?limit=50", headers= {'User-agent' : 'mathmeme bot v0.01'})
+    print(f'Get Subreddit r/{subreddit} top posts today')
     data = json.loads(response.text)
-    print(data)
-    print(data.keys())
-    print(data['data']['children'][1]['data'])
-    print(data['data']['children'][1]['data']['url_overridden_by_dest'])
-    content = requests.get(data['data']['children'][1]['data']['url_overridden_by_dest'], headers={'User-agent' : 'mathmeme bot 0.01'}).content
+    posts = data['data']['children']
+
+    todays = filter_today_reddit_post(posts)
+    post = random.choice(todays)
+    # print(post['data'].keys())
+    # print(post['data'])
+    is_video = post['data']['is_video']
+    # print('Video? ', post['data']['is_video'])
+    if ('url_overridden_by_dest' in post['data'].keys()) and (not is_video):
+        print(post['data']['url_overridden_by_dest'])
+        end = post['data']['url_overridden_by_dest'].split('.')[3]
+
+        # print('media' in post['data'])
+        #print(post['data']['secure_media'])
+        content = requests.get(post['data']['url_overridden_by_dest'], headers = {'User-agent' : 'mathmeme bot v0.01'}).content
+        await channel.send(post['data']['title'])
+        await channel.send(file = discord.File(BytesIO(content), f'meme.{end}'))
+    
+    if is_video:
+        #print(post['data']['secure_media'].keys())
+        #print(post['data']['secure_media']['reddit_video'].keys())
+        content = requests.get(post['data']['secure_media']['reddit_video']['fallback_url'], headers = {'User-agent' : 'mathmeme bot v0.01'}).content
+        await channel.send(post['data']['title'])
+        await channel.send(file = discord.File(BytesIO(content), 'meme.mp4'))
+
+async def GetRedditTop(channel : discord.channel, author, subreddit : str):
+    response = requests.request('GET', "https://www.reddit.com/r/mathmemes/.json?limit=10", headers= {'User-agent' : 'mathmeme bot v0.01'})
+    # print(f'Get Subreddit r/{subreddit} top posts')
+    data = json.loads(response.text)
+    posts = data['data']['children']
+    #print(data)
+    #print(data.keys())
+    #print(data['data']['children'][1]['data'])
+    #print(data['data']['children'][1]['data']['url_overridden_by_dest'])
+    content = requests.get(data['data']['children'][1]['data']['url_overridden_by_dest'], headers={'User-agent' : 'mathmeme bot v0.01'}).content
     # image = Image.open(BytesIO(content))
     await channel.send(file = discord.File(BytesIO(content), 'meme.png'))
 
+
+async def ScheduleTask(channel : discord.channel, author, command : str, interval : str, *args):
+    await schedule_task(float(interval), COMMANDS[command], *(channel, author, *args))
+    pass
 
 COMMAND_PREFIX = '!'
 COMMANDS = {
     'image' : search_image,
     'test' : Trial_Func,
-    'reddit' : GetRedditTop
+    #'redditt' : GetRedditTop,
+    'reddit' : GetRedditTodaysTop,
+    'schedule' : ScheduleTask
 }
 
 HATED_URL = [
