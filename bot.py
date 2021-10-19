@@ -18,7 +18,7 @@ import asyncio #asynchronous execution
 
 
 # permission=8 is admin
-# invitation link: https://discord.com/api/oauth2/authorize?client_id=895705102231412776&permissions=469776384&scope=bot - No Cancer
+# invitation link: https://discord.com/api/oauth2/authorize?client_id=895705102231412776&permissions=8&scope=bot - No Cancer
 # Check javascript implementation: https://discordjs.guide/
 
 #print(os.getcwd())
