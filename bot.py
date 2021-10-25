@@ -84,6 +84,7 @@ def filter_today_reddit_post(posts):
 
 async def Trial_Func(channel, author, t : str):
     print(t)
+    return True
 
 async def GetRedditTodaysTop(channel : discord.channel, author : discord.member, subreddit : str):
     response = requests.request('GET', f"https://www.reddit.com/r/{subreddit}/.json?limit=50", headers= {'User-agent' : 'mathmeme bot v0.01'})
@@ -113,6 +114,8 @@ async def GetRedditTodaysTop(channel : discord.channel, author : discord.member,
         content = requests.get(post['data']['secure_media']['reddit_video']['fallback_url'], headers = {'User-agent' : 'mathmeme bot v0.01'}).content
         await channel.send(post['data']['title'])
         await channel.send(file = discord.File(BytesIO(content), 'meme.mp4'))
+    
+    return True
 
 async def GetRedditTop(channel : discord.channel, author, subreddit : str):
     response = requests.request('GET', "https://www.reddit.com/r/mathmemes/.json?limit=10", headers= {'User-agent' : 'mathmeme bot v0.01'})
@@ -126,19 +129,42 @@ async def GetRedditTop(channel : discord.channel, author, subreddit : str):
     content = requests.get(data['data']['children'][1]['data']['url_overridden_by_dest'], headers={'User-agent' : 'mathmeme bot v0.01'}).content
     # image = Image.open(BytesIO(content))
     await channel.send(file = discord.File(BytesIO(content), 'meme.png'))
+    return True
 
+async def GetHelp(channel : discord.channel, author : discord.member, *args):
+    l = args
+    if len(args) == 0:
+        l = list(COMMANDS.keys())
+    fs = [COMMANDS[x] for x in l]
+    descriptions = [COMMAND_DESCRIPTIONS[x] for x in l]
+    txt = ''
+    for desc, func, x in zip(descriptions, fs, l):
+        txt += f"{x}{func.__code__.co_varnames[2:func.__code__.co_argcount]} >>> {desc}\n"
+    await channel.send(txt)
+    return True
 
 async def ScheduleTask(channel : discord.channel, author, command : str, interval : str, *args):
     await schedule_task(float(interval), COMMANDS[command], *(channel, author, *args))
-    pass
-
+    return True
+        
 COMMAND_PREFIX = '!'
+
+# Function to pass in have structure f(channel, author, *args) -> bool (if True delete message if False keep message)
 COMMANDS = {
     'image' : search_image,
     'test' : Trial_Func,
     #'redditt' : GetRedditTop,
     'reddit' : GetRedditTodaysTop,
-    'schedule' : ScheduleTask
+    'schedule' : ScheduleTask,
+    'help' : GetHelp
+}
+
+COMMAND_DESCRIPTIONS = {
+    'image' : 'WIP Searches an image on the web',
+    'test' : 'Test Function',
+    'reddit' : 'Returns one of todays top posts from the given subreddit',
+    'schedule' : 'Schedule a command to be run multiple times',
+    'help' : 'Returns a small description of the currently available commands'
 }
 
 HATED_URL = [
@@ -180,7 +206,9 @@ async def on_message(message : discord.Message):
     #        break
     if norm_content.startswith(COMMAND_PREFIX):
         splitted = norm_content[1:].split()
-        await COMMANDS[splitted[0]](chn, author, *splitted[1:])
+        d = await COMMANDS[splitted[0]](chn, author, *splitted[1:])
+        if d:
+            await message.delete()
 
     
     if inHated(norm_content):
