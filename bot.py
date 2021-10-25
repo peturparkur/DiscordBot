@@ -114,7 +114,6 @@ async def GetRedditTodaysTop(channel : discord.channel, author : discord.member,
         content = requests.get(post['data']['secure_media']['reddit_video']['fallback_url'], headers = {'User-agent' : 'mathmeme bot v0.01'}).content
         await channel.send(post['data']['title'])
         await channel.send(file = discord.File(BytesIO(content), 'meme.mp4'))
-    
     return True
 
 async def GetRedditTop(channel : discord.channel, author, subreddit : str):
